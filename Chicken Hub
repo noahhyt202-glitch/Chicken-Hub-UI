@@ -19,10 +19,13 @@ local UserInputService = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 
 local Themes = {
-	Chicken = { Accent = Color3.fromRGB(242, 198, 64), Bg = Color3.fromRGB(26, 22, 13), Panel = Color3.fromRGB(42, 35, 20), Item = Color3.fromRGB(54, 45, 26), Stroke = Color3.fromRGB(104, 86, 46) },
-	Red    = { Accent = Color3.fromRGB(230, 40, 50),  Bg = Color3.fromRGB(10, 10, 12), Panel = Color3.fromRGB(20, 20, 23), Item = Color3.fromRGB(30, 29, 33), Stroke = Color3.fromRGB(92, 28, 34) },
-	Blue   = { Accent = Color3.fromRGB(70, 130, 230), Bg = Color3.fromRGB(16, 20, 30), Panel = Color3.fromRGB(26, 32, 46), Item = Color3.fromRGB(34, 42, 60), Stroke = Color3.fromRGB(55, 70, 100) },
-	Green  = { Accent = Color3.fromRGB(70, 200, 120), Bg = Color3.fromRGB(16, 26, 20), Panel = Color3.fromRGB(26, 40, 32), Item = Color3.fromRGB(34, 52, 42), Stroke = Color3.fromRGB(55, 90, 70) },
+	Chicken     = { Accent = Color3.fromRGB(242, 198, 64),  Bg = Color3.fromRGB(26, 22, 13),  Panel = Color3.fromRGB(42, 35, 20),  Item = Color3.fromRGB(54, 45, 26),  Stroke = Color3.fromRGB(104, 86, 46)  },
+	Red         = { Accent = Color3.fromRGB(230, 40, 50),   Bg = Color3.fromRGB(10, 10, 12),  Panel = Color3.fromRGB(20, 20, 23),  Item = Color3.fromRGB(30, 29, 33),  Stroke = Color3.fromRGB(92, 28, 34)   },
+	Blue        = { Accent = Color3.fromRGB(70, 130, 230),  Bg = Color3.fromRGB(16, 20, 30),  Panel = Color3.fromRGB(26, 32, 46),  Item = Color3.fromRGB(34, 42, 60),  Stroke = Color3.fromRGB(55, 70, 100)  },
+	Green       = { Accent = Color3.fromRGB(70, 200, 120),  Bg = Color3.fromRGB(16, 26, 20),  Panel = Color3.fromRGB(26, 40, 32),  Item = Color3.fromRGB(34, 52, 42),  Stroke = Color3.fromRGB(55, 90, 70)   },
+	-- ✨ Custom themes
+	GirlChicken = { Accent = Color3.fromRGB(255, 105, 180), Bg = Color3.fromRGB(28, 18, 24),  Panel = Color3.fromRGB(48, 28, 40),  Item = Color3.fromRGB(62, 36, 52),  Stroke = Color3.fromRGB(180, 80, 130) },
+	Purple      = { Accent = Color3.fromRGB(160, 80, 255),  Bg = Color3.fromRGB(14, 10, 22),  Panel = Color3.fromRGB(28, 18, 44),  Item = Color3.fromRGB(38, 26, 58),  Stroke = Color3.fromRGB(90, 50, 150)  },
 }
 local TEXT, SUBTEXT = Color3.fromRGB(240, 234, 220), Color3.fromRGB(168, 158, 138)
 local FONT, FONT_B = Enum.Font.Gotham, Enum.Font.GothamBold
@@ -236,7 +239,8 @@ function Library.new(opts)
 	return self
 end
 
-local THEME_ORDER = { "Red", "Chicken", "Blue", "Green" }
+-- Cycle order now includes the two custom themes
+local THEME_ORDER = { "Red", "Chicken", "Blue", "Green", "GirlChicken", "Purple" }
 function Library:NextTheme()
 	self:SetTheme(THEME_ORDER[(table.find(THEME_ORDER, self.ThemeName) or 1) % #THEME_ORDER + 1])
 end
@@ -289,7 +293,6 @@ local function tagIcon(lib, parent)
 end
 
 function Library:AddTab(name, icon)
-	-- Added _pillBar and _sub to the definition to fix the linter errors
 	local tab = { Name = name, _items = {}, _subs = {}, _pillBar = nil, _sub = nil }
 	local btn = self:_bind(new("TextButton", {
 		Text = "", AutoButtonColor = false, BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 40), Parent = self._tabList,
@@ -316,7 +319,7 @@ function Library:AddTab(name, icon)
 	if #self.Tabs == 1 then self:_select(tab) end
 
 	local lib = self
-	
+
 	function tab:AddSubTab(subName)
 		if not tab._pillBar then
 			tab._pillBar = lib:_bind(new("ScrollingFrame", {
