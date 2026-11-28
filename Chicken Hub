@@ -4,11 +4,11 @@
 	Quick start:
 		local Lib = ChickenUI.new({
 			Title = "My Hub", Version = "v1.0",
-			Theme = "Chicken",                       -- optional
+			Theme = "Chicken",                       -- optional default; the theme the user last picked in any window wins
 			ToggleKey = Enum.KeyCode.RightControl,   -- optional
 			OnClose = function() end,                -- optional, runs once when the window closes
 		})
-		Lib:SetConfig("MyHub")                     -- saves controls that have a Key + the theme
+		Lib:SetConfig("MyHub")                     -- saves controls that have a Key
 
 		Lib:AddDashboardTab()
 		Lib:AddNotificationsTab()
@@ -17,6 +17,7 @@
 		local sec = tab:AddSection("Settings")
 		sec:AddToggle({ Name = "Aimbot", Key = "aimbot", Default = false, Callback = function(v) end })
 		sec:AddButton({ Name = "Teleport", Callback = function() end })
+		sec:AddTextInput({ Name = "Goto", Callback = function(text) end, OnFocusLost = function(text, enterPressed) end })
 
 		Lib:Notify({ Title = "Ready", Message = "Hub loaded!", Type = "success" })   -- info | success | warn | error
 		Lib:WatchRemote(remote, "SomeRemote")      -- existence check only; pass true as 4th arg to also ping it
@@ -42,6 +43,8 @@ local Themes = {
 	Purple      = { Accent = Color3.fromRGB(160, 80, 255),  Bg = Color3.fromRGB(14, 10, 22), Panel = Color3.fromRGB(9, 6, 15),    Item = Color3.fromRGB(32, 22, 52), Stroke = Color3.fromRGB(90, 50, 150)  },
 }
 local THEME_ORDER = { "Red", "Chicken", "Blue", "Green", "GirlChicken", "Purple" }
+-- One theme file for every window, so they all open in the last theme the user picked.
+local THEME_FILE = "ChickenUI_theme.txt"
 
 local TEXT, SUBTEXT = Color3.fromRGB(240, 234, 220), Color3.fromRGB(168, 158, 138)
 local WHITE, BLACK  = Color3.new(1, 1, 1), Color3.new(0, 0, 0)
@@ -176,7 +179,7 @@ function Library:SetTheme(name)
 	for _, t in ipairs(self._themed) do t[1][t[2]] = self.Theme[t[3]] end
 	if self._themeLabel then self._themeLabel.Text = name end
 	for _, fn in ipairs(self._onTheme) do pcall(fn, self.Theme) end
-	self:_queueSave()
+	pcall(writefile, THEME_FILE, name)
 end
 
 function Library:NextTheme()
@@ -213,11 +216,6 @@ function Library:SetConfig(name)
 		local ok2, data = pcall(HttpService.JSONDecode, HttpService, raw)
 		if ok2 and type(data) == "table" then
 			self._configData = data
-			if type(data._theme) == "string" and Themes[data._theme] then
-				self._suppressSave = true
-				self:SetTheme(data._theme)
-				self._suppressSave = false
-			end
 			for key, api in pairs(self._config) do
 				if data[key] ~= nil then self:_applyCfg(api, data[key]) end
 			end
@@ -228,7 +226,7 @@ end
 
 function Library:SaveConfig()
 	if not self._configFile then return end
-	local data = { _theme = self.ThemeName }
+	local data = {}
 	for key, api in pairs(self._config) do
 		local ok, v = pcall(api.Get, api)
 		if ok and v ~= nil then data[key] = v end
@@ -438,6 +436,11 @@ function Library.new(opts)
 		_startTime = os.clock(),
 	}, Library)
 	if opts.Theme and Themes[opts.Theme] then self.Theme, self.ThemeName = Themes[opts.Theme], opts.Theme end
+	local okTheme, savedTheme = pcall(readfile, THEME_FILE)
+	if okTheme and type(savedTheme) == "string" then
+		savedTheme = savedTheme:match("^%s*(.-)%s*$")
+		if Themes[savedTheme] then self.Theme, self.ThemeName = Themes[savedTheme], savedTheme end
+	end
 
 	local parentGui = (type(gethui) == "function" and gethui()) or player:WaitForChild("PlayerGui")
 	local guiName = "ChickenUI_" .. tostring(opts.Name or opts.Title or "Hub")
@@ -1399,9 +1402,10 @@ function Library:_section(tab, parent, name)
 			showAC(matches)
 		end)
 		box.Focused:Connect(function() tween(bStroke, 0.15, { Transparency = 0 }) end)
-		box.FocusLost:Connect(function()
+		box.FocusLost:Connect(function(enterPressed)
 			tween(bStroke, 0.15, { Transparency = 0.35 })
 			if o.Key then lib:_queueSave() end
+			if o.OnFocusLost then task.spawn(o.OnFocusLost, box.Text, enterPressed) end
 		end)
 		local api = {}
 		function api:Get() return box.Text end
